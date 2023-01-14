@@ -2,6 +2,7 @@
 /// Abstract DOM Tree
 use anyhow::Result;
 use elementtree::Element;
+use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Clone, Copy, Default)]
 pub struct Size(pub u32, pub u32);
@@ -9,7 +10,7 @@ pub struct Size(pub u32, pub u32);
 #[derive(Debug, Clone, Copy, Default)]
 pub struct Position(pub u32, pub u32);
 
-#[derive(Debug, Clone, Default)]
+#[derive(Debug, Clone, Default, Serialize, Deserialize)]
 pub struct Color(String);
 
 impl From<&str> for Color {
@@ -30,6 +31,7 @@ pub trait PositionOptionT {
     fn get_position_option(&self) -> PositionOption;
 }
 
+#[typetag::serde(tag = "type")]
 pub trait SvgTangibleObject: SizeOptionT + PositionOptionT + std::fmt::Debug {
     fn cal_position(&self, parent_size: Size, size: Size) -> Position {
         let position_option = self.get_position_option();
@@ -61,20 +63,20 @@ pub trait SvgTangibleObject: SizeOptionT + PositionOptionT + std::fmt::Debug {
     fn to_svg(&self, size: Size, position: Position) -> (Element, Option<Element>);
 }
 
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone, Copy, Serialize, Deserialize)]
 pub enum PositionOption {
     Center,
     Absolute(u32, u32),
 }
 
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone, Copy, Serialize, Deserialize)]
 pub enum SizeOption {
     // FitContent(Padding)
     FitContent(u32),
     Absolute(u32, u32),
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct BasicShape {
     shape_type: BasicShapeType,
     position: PositionOption,
@@ -99,6 +101,7 @@ impl BasicShape {
     }
 }
 
+#[typetag::serde]
 impl SvgTangibleObject for BasicShape {
     fn to_svg(&self, size: Size, position: Position) -> (Element, Option<Element>) {
         let mut element = Element::new("rect");
@@ -129,7 +132,7 @@ impl PositionOptionT for BasicShape {
     }
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub enum BasicShapeType {
     Rectangle,
 }
@@ -137,13 +140,13 @@ pub enum BasicShapeType {
 /// A background layer is a layer only contains style.
 /// It has no position info.
 //TODO: use BackgroundType directly?
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Background {
     bg_type: BackgroundType,
     // size: SizeOption,
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub enum BackgroundType {
     Pure(Color),
     Linear(LinearGradient),
@@ -172,14 +175,14 @@ impl Background {
     }
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct LinearGradient {
     /// Color, offset
     stops: Vec<(Color, String)>,
     degree: f32,
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct RadialGradient {}
 
 impl SizeOptionT for Background {
@@ -194,6 +197,7 @@ impl PositionOptionT for Background {
     }
 }
 
+#[typetag::serde]
 impl SvgTangibleObject for Background {
     fn to_svg(&self, size: Size, position: Position) -> (Element, Option<Element>) {
         match &self.bg_type {
@@ -238,7 +242,7 @@ impl SvgTangibleObject for Background {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Serialize, Deserialize)]
 pub struct Image {
     path: String,
 }
@@ -258,6 +262,7 @@ impl PositionOptionT for Image {
     }
 }
 
+#[typetag::serde]
 impl SvgTangibleObject for Image {
     fn to_svg(&self, size: Size, position: Position) -> (Element, Option<Element>) {
         let mut element = Element::new("image");
@@ -273,6 +278,7 @@ impl SvgTangibleObject for Image {
 
 pub struct Fill {}
 
+#[derive(Serialize, Deserialize)]
 pub struct Canvas {
     /// A series of layers that are rendered in order.
     ///
@@ -526,6 +532,30 @@ mod tests {
 
         compare_svg(&xml, EXPECT).unwrap();
         compare_svg(&defs.unwrap(), EXPECT_DEFS).unwrap();
+        Ok(())
+    }
+
+    #[test]
+    fn adt_serialization() -> Result<()> {
+        let mut canvas = Canvas::new();
+
+        let background = Background::new_linear_gradient(
+            vec![
+                (Color("#000000".to_string()), "0%".to_string()),
+                (Color("#ffffff".to_string()), "100%".to_string()),
+            ],
+            45.0,
+        );
+        canvas.add_layer_on_top(Box::new(background));
+
+        let img = Image {
+            path: "./assets/input.png".to_string(),
+        };
+        canvas.add_layer_on_top(Box::new(img));
+
+        let yaml = serde_yaml::to_string(&canvas).unwrap();
+        println!("{}", yaml);
+
         Ok(())
     }
 }

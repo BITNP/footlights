@@ -1,0 +1,11 @@
+layers:
+- type: Background
+  bg_type: !Linear
+    stops:
+    - - '#000000'
+      - 0%
+    - - '#ffffff'
+      - 100%
+    degree: 45.0
+- type: Image
+  path: ./assets/input.png

@@ -11,5 +11,6 @@ elementtree = "1.2.3"
 image = "0.24.5"
 imagesize = "0.11.0"
 resvg = "0.28.0"
-serde = "1.0.152"
+serde = {version = "1.0.152", features = ["derive"]}
 serde_yaml = "0.9.16"
+typetag = "0.2"
