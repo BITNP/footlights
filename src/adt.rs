@@ -1,3 +1,4 @@
+#![warn(missing_docs)]
 /// Abstract DOM Tree
 use anyhow::Result;
 use elementtree::Element;
@@ -7,6 +8,15 @@ pub struct Size(pub u32, pub u32);
 
 #[derive(Debug, Clone, Copy, Default)]
 pub struct Position(pub u32, pub u32);
+
+#[derive(Debug, Clone, Default)]
+pub struct Color(String);
+
+impl From<&str> for Color {
+    fn from(s: &str) -> Self {
+        Self(s.to_string())
+    }
+}
 
 pub trait SvgObject {
     fn to_svg(&self) -> Element;
@@ -20,7 +30,7 @@ pub trait PositionOptionT {
     fn get_position_option(&self) -> PositionOption;
 }
 
-trait SvgTangibleObject: SizeOptionT + PositionOptionT {
+pub trait SvgTangibleObject: SizeOptionT + PositionOptionT + std::fmt::Debug {
     fn cal_position(&self, parent_size: Size, size: Size) -> Position {
         let position_option = self.get_position_option();
         match position_option {
@@ -29,10 +39,12 @@ trait SvgTangibleObject: SizeOptionT + PositionOptionT {
                 let y = (parent_size.1 as f32 - size.1 as f32) / 2.;
                 Position(x as u32, y as u32)
             }
+            PositionOption::Absolute(x, y) => Position(x, y),
         }
     }
     fn cal_size(&self, child_size: Size) -> Size {
         let size_option = self.get_size_option();
+        println!("size_option: {:?}", size_option);
         match size_option {
             SizeOption::FitContent(padding) => {
                 let width = child_size.0 + padding * 2;
@@ -42,12 +54,17 @@ trait SvgTangibleObject: SizeOptionT + PositionOptionT {
             SizeOption::Absolute(width, height) => Size(width, height),
         }
     }
-    fn to_svg(&self, size: Size, position: Position) -> Element;
+    /// Generate svg elements with the given size and position.
+    ///
+    /// * `size`:
+    /// * `position`:
+    fn to_svg(&self, size: Size, position: Position) -> (Element, Option<Element>);
 }
 
 #[derive(Debug, Clone, Copy)]
 pub enum PositionOption {
     Center,
+    Absolute(u32, u32),
 }
 
 #[derive(Debug, Clone, Copy)]
@@ -57,10 +74,12 @@ pub enum SizeOption {
     Absolute(u32, u32),
 }
 
+#[derive(Debug, Clone)]
 pub struct BasicShape {
     shape_type: BasicShapeType,
     position: PositionOption,
     size: SizeOption,
+    fill: Option<String>,
 }
 
 pub struct ViewBox {
@@ -75,18 +94,26 @@ impl BasicShape {
             shape_type,
             size: SizeOption::Absolute(100, 100),
             position: PositionOption::Center,
+            fill: None,
         }
     }
 }
 
 impl SvgTangibleObject for BasicShape {
-    fn to_svg(&self, size: Size, position: Position) -> Element {
+    fn to_svg(&self, size: Size, position: Position) -> (Element, Option<Element>) {
         let mut element = Element::new("rect");
         element.set_attr("width", size.0.to_string());
         element.set_attr("height", size.1.to_string());
         element.set_attr("x", position.0.to_string());
         element.set_attr("y", position.1.to_string());
-        element
+        // TODO: valid css color
+        self.fill
+            .as_ref()
+            .map(|fill| element.set_attr("fill", fill));
+        // self.stroke
+        //     .as_ref()
+        //     .map(|stroke| element.set_attr("stroke", stroke));
+        (element, None)
     }
 }
 
@@ -102,21 +129,114 @@ impl PositionOptionT for BasicShape {
     }
 }
 
+#[derive(Debug, Clone)]
 pub enum BasicShapeType {
     Rectangle,
 }
 
 /// A background layer is a layer only contains style.
 /// It has no position info.
+//TODO: use BackgroundType directly?
+#[derive(Debug, Clone)]
 pub struct Background {
     bg_type: BackgroundType,
-    colors: Vec<Color>,
-    size: Size,
+    // size: SizeOption,
 }
 
-pub struct Color;
+#[derive(Debug, Clone)]
+pub enum BackgroundType {
+    Pure(Color),
+    Linear(LinearGradient),
+    Radial(RadialGradient),
+}
 
-pub enum BackgroundType {}
+impl Background {
+    pub fn new() -> Self {
+        Self {
+            bg_type: BackgroundType::Pure(Color("white".to_string())),
+        }
+    }
+
+    pub fn new_pure(color: Color) -> Self {
+        Self {
+            bg_type: BackgroundType::Pure(color),
+        }
+    }
+
+    pub fn new_linear_gradient(stops: Vec<(Color, String)>, degree: f32) -> Self {
+        let mut linear_gradient = LinearGradient { stops, degree };
+
+        Self {
+            bg_type: BackgroundType::Linear(linear_gradient),
+        }
+    }
+}
+
+#[derive(Debug, Clone)]
+pub struct LinearGradient {
+    /// Color, offset
+    stops: Vec<(Color, String)>,
+    degree: f32,
+}
+
+#[derive(Debug, Clone)]
+pub struct RadialGradient {}
+
+impl SizeOptionT for Background {
+    fn get_size_option(&self) -> SizeOption {
+        SizeOption::FitContent(100)
+    }
+}
+
+impl PositionOptionT for Background {
+    fn get_position_option(&self) -> PositionOption {
+        PositionOption::Center
+    }
+}
+
+impl SvgTangibleObject for Background {
+    fn to_svg(&self, size: Size, position: Position) -> (Element, Option<Element>) {
+        match &self.bg_type {
+            BackgroundType::Linear(linear_gradient) => {
+                let mut linear = Element::new("linearGradient");
+                linear.set_attr("id", "background");
+
+                linear_gradient
+                    .stops
+                    .iter()
+                    .map(|(color, offset)| {
+                        let mut stop = Element::new("stop");
+                        stop.set_attr("offset", offset);
+                        stop.set_attr("stop-color", color.0.clone());
+                        stop
+                    })
+                    .for_each(|stop| {
+                        linear.append_child(stop);
+                    });
+
+                let mut element = Element::new("rect");
+                element.set_attr("width", size.0.to_string());
+                element.set_attr("height", size.1.to_string());
+                element.set_attr("x", position.0.to_string());
+                element.set_attr("y", position.1.to_string());
+                element.set_attr("fill", "url(#background)");
+
+                (element, Some(linear))
+            }
+            BackgroundType::Radial(_) => todo!(),
+            BackgroundType::Pure(color) => {
+                let mut element = Element::new("rect");
+                element.set_attr("width", size.0.to_string());
+                element.set_attr("height", size.1.to_string());
+                element.set_attr("x", position.0.to_string());
+                element.set_attr("y", position.1.to_string());
+                element.set_attr("fill", color.0.clone());
+
+                (element, None)
+            }
+        }
+    }
+}
 
 pub struct Image {}
 
@@ -160,7 +280,7 @@ impl Canvas {
 
     fn calculate_position(&mut self) {}
 
-    pub fn to_svg_string(&mut self) -> Result<String> {
+    pub fn to_svg_string(&self) -> Result<String> {
         Ok(self.to_svg().to_string()?)
     }
 }
@@ -170,40 +290,84 @@ impl SvgObject for Canvas {
         let mut child_size = Size::default();
         let mut parent_size = Size::default();
         let mut parent_position = Position(0, 0);
+        println!("layers: {:?}", self.layers);
         // Calculate the size from the top to the bottom.
-        let layers: Vec<_> = self
+        let (childs, defs_childs): (Vec<_>, Vec<_>) = self
             .layers
             .iter()
+            .enumerate()
             .rev()
-            .map(|o| {
+            .map(|(i, o)| {
                 let size = o.cal_size(child_size);
+                println!(
+                    "i: {}, o: {:?}, size: {:?}, child_size: {:?}",
+                    i, o, size, child_size
+                );
                 child_size = size;
-                (o, size)
+                (i, o, size)
             })
-            // Calculate the position from the bottom to the top.
+            .collect::<Vec<_>>()
+            .into_iter()
             .rev()
-            .map(|(o, s)| {
+            // Calculate the position from the bottom to the top.
+            .map(|(i, o, s)| {
                 let position = o.cal_position(parent_size, s);
                 parent_size = s;
                 parent_position = position;
-                (o, s, position)
+                (i, o, s, position)
             })
-            .collect();
+            .map(|(_, o, s, p)| o.to_svg(s, p))
+            .unzip();
 
         let mut root = self.build_svg_canvas(child_size);
+        let mut defs = Element::new("defs");
 
-        layers.iter().for_each(|(o, s, p)| {
-            let element = o.to_svg(*s, *p);
-            root.append_child(element);
+        childs.into_iter().for_each(|child| {
+            root.append_child(child);
         });
+
+        defs_childs.into_iter().for_each(|child| {
+            if let Some(child) = child {
+                defs.append_child(child);
+            }
+        });
+
+        if defs.child_count() != 0 {
+            root.append_child(defs);
+        }
 
         root
     }
 }
 
+pub fn build_abstract_dom_tree() -> Canvas {
+    let mut canvas = Canvas::new();
+
+    let mut shape = BasicShape::new(BasicShapeType::Rectangle);
+    shape.size = SizeOption::Absolute(200, 200);
+    shape.fill = Some("blue".to_string());
+
+    let mut shape2 = BasicShape::new(BasicShapeType::Rectangle);
+    shape2.size = SizeOption::Absolute(200, 200);
+    shape2.position = PositionOption::Absolute(50, 50);
+    shape2.fill = Some("red".to_string());
+
+    let background = Background::new_linear_gradient(
+        vec![
+            (Color("#000000".to_string()), "0%".to_string()),
+            (Color("#ffffff".to_string()), "100%".to_string()),
+        ],
+        45.0,
+    );
+
+    canvas.add_layer_on_top(Box::new(background));
+    canvas.add_layer_on_top(Box::new(shape));
+    canvas.add_layer_on_top(Box::new(shape2));
+    canvas
+}
+
 #[cfg(test)]
 mod tests {
-    use crate::layers::Canvas;
 
     use super::*;
 
@@ -232,7 +396,9 @@ mod tests {
     #[test]
     fn svg_basic_shape_rect() -> Result<()> {
         let img = BasicShape::new(BasicShapeType::Rectangle);
-        let xml = img.to_svg(Size(100, 100), Position(0, 0));
+        let (xml, defs) = img.to_svg(Size(100, 100), Position(0, 0));
+
+        assert!(defs.is_none());
 
         const EXPECT: &str = r#"
         <rect width="100" height="100" x="0" y="0"/>
@@ -268,6 +434,44 @@ mod tests {
 
         compare_svg(&xml, EXPECT).unwrap();
 
+        Ok(())
+    }
+
+    #[test]
+    fn svg_background_pure() -> Result<()> {
+        let background = Background::new_pure(Color("red".to_string()));
+
+        let (xml, defs) = background.to_svg(Size(100, 100), Position(0, 0));
+
+        assert!(defs.is_none());
+
+        const EXPECT: &str = r#"
+        <rect width="100" height="100" x="0" y="0" fill="red"/>
+        "#;
+        compare_svg(&xml, EXPECT).unwrap();
+
+        Ok(())
+    }
+
+    #[test]
+    fn svg_background_linear_gradient() -> Result<()> {
+        let stops = vec![
+            ("red".into(), 0.0.to_string()),
+            ("blue".into(), 1.0.to_string()),
+        ];
+        let mut background = Background::new_linear_gradient(stops, 45.0);
+        let (xml, defs) = background.to_svg(Size(100, 100), Position(0, 0));
+
+        const EXPECT_DEFS: &str = r#"
+        <linearGradient id="background"><stop offset="0" stop-color="red"/><stop offset="1" stop-color="blue"/></linearGradient>
+        "#;
+
+        const EXPECT: &str = r#"
+        <rect width="100" height="100" x="0" y="0" fill="url(#background)" />
+        "#;
+
+        compare_svg(&xml, EXPECT).unwrap();
+        compare_svg(&defs.unwrap(), EXPECT_DEFS).unwrap();
         Ok(())
     }
 }
