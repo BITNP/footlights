@@ -82,11 +82,11 @@ pub struct BasicShape {
     fill: Option<String>,
 }
 
-pub struct ViewBox {
-    content: Box<dyn SvgTangibleObject>,
-    position_option: PositionOption,
-    size_option: SizeOption,
-}
+// pub struct ViewBox {
+//     content: Box<dyn SvgTangibleObject>,
+//     position_option: PositionOption,
+//     size_option: SizeOption,
+// }
 
 impl BasicShape {
     pub fn new(shape_type: BasicShapeType) -> Self {
@@ -238,7 +238,38 @@ impl SvgTangibleObject for Background {
     }
 }
 
-pub struct Image {}
+#[derive(Debug)]
+pub struct Image {
+    path: String,
+}
+
+impl SizeOptionT for Image {
+    fn get_size_option(&self) -> SizeOption {
+        match imagesize::size(&self.path) {
+            Ok(dim) => SizeOption::Absolute(dim.width as u32, dim.height as u32),
+            Err(why) => panic!("Error getting dimensions: {:?}", why),
+        }
+    }
+}
+
+impl PositionOptionT for Image {
+    fn get_position_option(&self) -> PositionOption {
+        PositionOption::Center
+    }
+}
+
+impl SvgTangibleObject for Image {
+    fn to_svg(&self, size: Size, position: Position) -> (Element, Option<Element>) {
+        let mut element = Element::new("image");
+        element.set_attr("width", size.0.to_string());
+        element.set_attr("height", size.1.to_string());
+        element.set_attr("x", position.0.to_string());
+        element.set_attr("y", position.1.to_string());
+        element.set_attr("href", self.path.clone());
+
+        (element, None)
+    }
+}
 
 pub struct Fill {}
 
@@ -343,15 +374,6 @@ impl SvgObject for Canvas {
 pub fn build_abstract_dom_tree() -> Canvas {
     let mut canvas = Canvas::new();
 
-    let mut shape = BasicShape::new(BasicShapeType::Rectangle);
-    shape.size = SizeOption::Absolute(200, 200);
-    shape.fill = Some("blue".to_string());
-
-    let mut shape2 = BasicShape::new(BasicShapeType::Rectangle);
-    shape2.size = SizeOption::Absolute(200, 200);
-    shape2.position = PositionOption::Absolute(50, 50);
-    shape2.fill = Some("red".to_string());
-
     let background = Background::new_linear_gradient(
         vec![
             (Color("#000000".to_string()), "0%".to_string()),
@@ -359,10 +381,24 @@ pub fn build_abstract_dom_tree() -> Canvas {
         ],
         45.0,
     );
-
     canvas.add_layer_on_top(Box::new(background));
-    canvas.add_layer_on_top(Box::new(shape));
-    canvas.add_layer_on_top(Box::new(shape2));
+
+    // let mut shape = BasicShape::new(BasicShapeType::Rectangle);
+    // shape.size = SizeOption::Absolute(200, 200);
+    // shape.fill = Some("blue".to_string());
+    // canvas.add_layer_on_top(Box::new(shape));
+    //
+    // let mut shape2 = BasicShape::new(BasicShapeType::Rectangle);
+    // shape2.size = SizeOption::Absolute(200, 200);
+    // shape2.position = PositionOption::Absolute(50, 50);
+    // shape2.fill = Some("red".to_string());
+    // canvas.add_layer_on_top(Box::new(shape2));
+
+    let img = Image {
+        path: "./assets/input.png".to_string(),
+    };
+    canvas.add_layer_on_top(Box::new(img));
+
     canvas
 }
 
@@ -449,6 +485,24 @@ mod tests {
         <rect width="100" height="100" x="0" y="0" fill="red"/>
         "#;
         compare_svg(&xml, EXPECT).unwrap();
+
+        Ok(())
+    }
+
+    #[test]
+    fn svg_image() -> Result<()> {
+        let img = Image {
+            path: "./assets/input.png".to_string(),
+        };
+
+        let (xml, defs) = img.to_svg(Size(100, 100), Position(0, 0));
+
+        assert!(defs.is_none());
+
+        const EXPECT: &str = r#"
+        <image width="100" height="100" x="0" y="0" href="./assets/input.png"/>
+        "#;
+        compare_svg(&xml, EXPECT)?;
 
         Ok(())
     }
