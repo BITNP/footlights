@@ -204,6 +204,10 @@ impl SvgTangibleObject for Background {
             BackgroundType::Linear(linear_gradient) => {
                 let mut linear = Element::new("linearGradient");
                 linear.set_attr("id", "background");
+                linear.set_attr(
+                    "gradientTransform",
+                    format!("rotate({})", linear_gradient.degree),
+                );
 
                 linear_gradient
                     .stops
@@ -318,7 +322,10 @@ impl Canvas {
     fn calculate_position(&mut self) {}
 
     pub fn to_svg_string(&self) -> Result<String> {
-        Ok(self.to_svg().to_string()?)
+        let string = self.to_svg().to_string()?;
+
+        println!("{}", string);
+        Ok(string)
     }
 }
 
