@@ -71,6 +71,14 @@ impl SvgTangibleObject for Background {
     fn to_svg(&self, size: Size, position: Position) -> (Element, Option<Element>) {
         match &self.bg_type {
             BackgroundType::Linear(linear_gradient) => {
+                let mut svg = Element::new("svg");
+                svg.set_attr("width", size.0.to_string());
+                svg.set_attr("height", size.1.to_string());
+                svg.set_attr("x", position.0.to_string());
+                svg.set_attr("y", position.1.to_string());
+
+                let mut defs = Element::new("defs");
+
                 let mut linear = Element::new("linearGradient");
                 linear.set_attr("id", "background");
                 linear.set_attr(
@@ -91,14 +99,16 @@ impl SvgTangibleObject for Background {
                         linear.append_child(stop);
                     });
 
-                let mut element = Element::new("rect");
-                element.set_attr("width", size.0.to_string());
-                element.set_attr("height", size.1.to_string());
-                element.set_attr("x", position.0.to_string());
-                element.set_attr("y", position.1.to_string());
-                element.set_attr("fill", "url(#background)");
+                let mut rect = Element::new("rect");
+                rect.set_attr("width", "100%");
+                rect.set_attr("height", "100%");
+                rect.set_attr("fill", "url(#background)");
 
-                (element, Some(linear))
+                defs.append_child(linear);
+                svg.append_child(defs);
+                svg.append_child(rect);
+
+                (svg, None)
             }
             BackgroundType::Radial(_) => todo!(),
             BackgroundType::Pure(color) => {
@@ -146,18 +156,21 @@ mod tests {
             ("blue".into(), 1.0.to_string()),
         ];
         let background = Background::new_linear_gradient(stops, 45.0);
-        let (xml, defs) = background.to_svg(Size(100, 100), Position(0, 0));
-
-        const EXPECT_DEFS: &str = r#"
-        <linearGradient gradientTransform="rotate(45)" id="background"><stop offset="0" stop-color="red"/><stop offset="1" stop-color="blue"/></linearGradient>
-        "#;
+        let (xml, _) = background.to_svg(Size(100, 100), Position(0, 0));
 
         const EXPECT: &str = r#"
-        <rect width="100" height="100" x="0" y="0" fill="url(#background)" />
+<svg x="0" y="0" height="100" width="100">
+    <defs>
+        <linearGradient gradientTransform="rotate(45)" id="background">
+            <stop offset="0" stop-color="red"/>
+            <stop offset="1" stop-color="blue"/>
+        </linearGradient>
+    </defs>
+    <rect width="100%" height="100%" fill="url(#background)" />
+</svg>
         "#;
 
         compare_svg(&xml, EXPECT).unwrap();
-        compare_svg(&defs.unwrap(), EXPECT_DEFS).unwrap();
         Ok(())
     }
 }
