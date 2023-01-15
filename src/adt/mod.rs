@@ -7,7 +7,6 @@ pub(crate) mod svg;
 
 pub(crate) mod background;
 pub(crate) mod image;
-pub(crate) mod text;
 
 #[cfg(test)] mod tests;
 
