@@ -1,8 +1,10 @@
 use anyhow::Result;
 use elementtree::Element;
 
+use super::foundation::{
+    BasicShape, Position, PositionOption, PositionOptionT, Size, SizeOption, SizeOptionT,
+};
 use serde::{Deserialize, Serialize};
-use super::foundation::{Size, SizeOptionT, SizeOption, Position, PositionOptionT, PositionOption, BasicShape};
 
 pub trait SvgObject {
     fn to_svg(&self) -> Element;
@@ -164,8 +166,8 @@ impl SvgObject for Canvas {
 #[cfg(test)]
 mod tests {
     use super::super::foundation::*;
-    use super::*;
     use super::super::tests::compare_svg;
+    use super::*;
 
     #[test]
     fn svg_basic_shape_rect() -> Result<()> {

@@ -1,7 +1,7 @@
 use elementtree::Element;
 use serde::{Deserialize, Serialize};
 
-use super::foundation::{Size, SizeOptionT, SizeOption, Position, PositionOptionT, PositionOption};
+use super::foundation::{Position, PositionOption, PositionOptionT, Size, SizeOption, SizeOptionT};
 use super::svg::SvgTangibleObject;
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -11,12 +11,9 @@ pub struct Image {
 
 impl Image {
     pub fn new_from_path(path: String) -> Self {
-        Self {
-            path: path,
-        }
+        Self { path }
     }
 }
-
 
 impl SizeOptionT for Image {
     fn get_size_option(&self) -> SizeOption {
@@ -49,9 +46,9 @@ impl SvgTangibleObject for Image {
 
 #[cfg(test)]
 mod tests {
-    use anyhow::Result;
-    use super::*;
     use super::super::tests::compare_svg;
+    use super::*;
+    use anyhow::Result;
 
     #[test]
     fn svg_image() -> Result<()> {

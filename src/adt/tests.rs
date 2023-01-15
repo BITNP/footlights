@@ -1,10 +1,10 @@
 use anyhow::Result;
 use elementtree::Element;
 
-use super::foundation::Color;
-use super::svg::Canvas;
 use super::background::Background;
+use super::foundation::Color;
 use super::image::Image;
+use super::svg::Canvas;
 
 pub fn compare_svg_text(left: &str, right: &str) -> Result<()> {
     let left_root = elementtree::Element::from_reader(left.as_bytes()).unwrap();
@@ -27,7 +27,6 @@ pub fn compare_svg(left: &Element, right: &str) -> Result<()> {
 
     Ok(())
 }
-
 
 #[test]
 fn adt_serialization() -> Result<()> {

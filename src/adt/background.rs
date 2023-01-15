@@ -1,7 +1,9 @@
 use elementtree::Element;
 use serde::{Deserialize, Serialize};
 
-use super::foundation::{Size, SizeOptionT, SizeOption, Position, PositionOptionT, PositionOption, Color};
+use super::foundation::{
+    Color, Position, PositionOption, PositionOptionT, Size, SizeOption, SizeOptionT,
+};
 use super::svg::SvgTangibleObject;
 
 /// A background layer is a layer only contains style.
@@ -117,9 +119,9 @@ pub struct Fill {}
 
 #[cfg(test)]
 mod tests {
-    use anyhow::Result;
-    use super::*;
     use super::super::tests::compare_svg;
+    use super::*;
+    use anyhow::Result;
 
     #[test]
     fn svg_background_pure() -> Result<()> {
