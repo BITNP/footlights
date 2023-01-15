@@ -41,3 +41,4 @@ layers:
     degree: 35.0
 - type: Image
   path: ./assets/input.png
+  round: 20

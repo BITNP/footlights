@@ -8,13 +8,13 @@ pub(crate) mod svg;
 pub(crate) mod background;
 pub(crate) mod image;
 
-#[cfg(test)] mod tests;
+#[cfg(test)]
+mod tests;
 
-use self::svg::Canvas;
 use self::background::Background;
 use self::foundation::Color;
 use self::image::Image;
-
+use self::svg::Canvas;
 
 pub fn build_abstract_dom_tree() -> Canvas {
     let mut canvas = Canvas::new();
