@@ -1,10 +1,8 @@
-use adt::build_abstract_dom_tree;
 use clap::Parser;
 
 use anyhow::Result;
-use image::io::Reader as ImageReader;
 
-use crate::adt::Canvas;
+use crate::adt::svg::Canvas;
 mod adt;
 mod svg_render;
 
