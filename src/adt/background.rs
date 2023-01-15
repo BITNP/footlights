@@ -143,11 +143,11 @@ mod tests {
             ("red".into(), 0.0.to_string()),
             ("blue".into(), 1.0.to_string()),
         ];
-        let mut background = Background::new_linear_gradient(stops, 45.0);
+        let background = Background::new_linear_gradient(stops, 45.0);
         let (xml, defs) = background.to_svg(Size(100, 100), Position(0, 0));
 
         const EXPECT_DEFS: &str = r#"
-        <linearGradient id="background"><stop offset="0" stop-color="red"/><stop offset="1" stop-color="blue"/></linearGradient>
+        <linearGradient gradientTransform="rotate(45)" id="background"><stop offset="0" stop-color="red"/><stop offset="1" stop-color="blue"/></linearGradient>
         "#;
 
         const EXPECT: &str = r#"
