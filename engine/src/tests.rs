@@ -5,6 +5,7 @@ use super::background::Background;
 use super::foundation::Color;
 use super::image::Image;
 use super::svg::Canvas;
+use pretty_assertions::{assert_eq, assert_ne};
 
 pub fn compare_svg_text(left: &str, right: &str) -> Result<()> {
     let left_root = elementtree::Element::from_reader(left.as_bytes()).unwrap();

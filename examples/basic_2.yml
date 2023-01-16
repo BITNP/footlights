@@ -42,3 +42,7 @@ layers:
 - type: Image
   path: ./assets/input.png
   round: 20
+  shadow:
+    - - 3
+      - 3
+    - 5
