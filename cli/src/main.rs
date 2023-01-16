@@ -1,9 +1,8 @@
 use clap::Parser;
 
 use anyhow::Result;
+use footlights_engine::Canvas;
 
-use crate::adt::svg::Canvas;
-mod adt;
 mod svg_render;
 
 #[derive(Parser, Debug)]

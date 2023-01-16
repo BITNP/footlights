@@ -1,0 +1,16 @@
+[package]
+name = "footlights-engine"
+version = "0.1.0"
+edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+anyhow = "1.0.68"
+elementtree = "1.2.3"
+imagesize = "0.11.0"
+serde = {version = "1.0.152", features = ["derive"]}
+typetag = "0.2"
+
+[dev-dependencies]
+serde_yaml = "0.9.16"

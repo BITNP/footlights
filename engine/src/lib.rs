@@ -2,11 +2,13 @@
 
 //! Abstract DOM Tree
 
-pub(crate) mod foundation;
-pub(crate) mod svg;
+pub mod foundation;
+pub mod svg;
 
-pub(crate) mod background;
-pub(crate) mod image;
+pub mod background;
+pub mod image;
+
+pub use svg::Canvas;
 
 #[cfg(test)]
 mod tests;
@@ -14,7 +16,6 @@ mod tests;
 use self::background::Background;
 use self::foundation::Color;
 use self::image::Image;
-use self::svg::Canvas;
 
 pub fn build_abstract_dom_tree() -> Canvas {
     let mut canvas = Canvas::new();
