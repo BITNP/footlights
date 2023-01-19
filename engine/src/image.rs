@@ -4,15 +4,78 @@ use serde::{Deserialize, Serialize};
 use super::foundation::{Position, PositionOption, PositionOptionT, Size, SizeOption, SizeOptionT};
 use super::svg::SvgTangibleObject;
 
+/// A struct that represents a drop shadow.
+///
+/// See [the official documentation](https://www.w3.org/TR/filter-effects/#feDropShadowElement).
+#[derive(Debug, Serialize, Deserialize)]
+pub struct DropShadow {
+    /// The x offset of the drop shadow.
+    pub x: usize,
+    /// The y offset of the drop shadow.
+    pub y: usize,
+    #[serde(default = "default_blur")]
+    /// The standard deviation for the blur operation in the drop shadow.
+    pub blur: usize,
+    #[serde(default = "default_opacity")]
+    /// Opacity of the effect.
+    pub opacity: f32,
+}
+
+fn default_blur() -> usize {
+    7
+}
+
+fn default_opacity() -> f32 {
+    0.6
+}
+
+impl std::default::Default for DropShadow {
+    fn default() -> Self {
+        Self {
+            x: 5,
+            y: 5,
+            blur: 7,
+            opacity: 0.6,
+        }
+    }
+}
+
+impl DropShadow {
+    #[cfg(test)]
+    fn new(x: usize, y: usize, blur: usize) -> Self {
+        Self {
+            x,
+            y,
+            blur,
+            opacity: 0.6,
+        }
+    }
+
+    /// According to gaussian blur, a pixel will be affected
+    /// by the pixels no more than (3 standard deviations + 1) px.
+    pub(crate) fn effect_range(&self) -> (usize, usize) {
+        let x = self.x + 3 * self.blur + 1;
+        let y = self.y + 3 * self.blur + 1;
+        (x, y)
+    }
+}
+
+/// A struct that represents a image.
 #[derive(Debug, Serialize, Deserialize)]
 pub struct Image {
     path: String,
+    /// The rounded corner radius of the image.
+    ///
+    /// If the value is `None`, the image is not rounded.
     round: Option<usize>,
-    /// (offset(x, y), stdDeviation)
-    shadow: Option<((usize, usize), usize)>,
+    /// The drop shadow of the image.
+    ///
+    /// If the value is `None`, the image is not shadowed.
+    shadow: Option<DropShadow>,
 }
 
 impl Image {
+    /// Creates a new `Image` instance.
     pub fn new_from_path(path: String) -> Self {
         Self {
             path,
@@ -26,16 +89,11 @@ impl Image {
     /// Padding size is the extra space around the image,
     /// which is left for the shadow.
     ///
-    /// According to gaussian blur, a pixel will be affected
-    /// by the pixels no more than (3 standard deviations + 1) px.
     ///
     /// This padding size will affect the size of the [`Image`].
     pub fn get_padding(&self) -> (usize, usize) {
-        if let Some((offset, std_deviation)) = &self.shadow {
-            (
-                offset.0 + 3 * std_deviation + 1,
-                offset.1 + 3 * std_deviation + 1,
-            )
+        if let Some(drop_shadow) = &self.shadow {
+            drop_shadow.effect_range()
         } else {
             (0, 0)
         }
@@ -88,13 +146,13 @@ impl SvgTangibleObject for Image {
                 defs.append_child(clip_path);
             }
 
-            if let Some((offset, std_deviation)) = self.shadow {
+            if let Some(ds) = &self.shadow {
                 let mut filter = Element::new("filter");
                 filter.set_attr("id", "shadow");
                 let mut drop_shadow = Element::new("feDropShadow");
-                drop_shadow.set_attr("dx", offset.0.to_string());
-                drop_shadow.set_attr("dy", offset.1.to_string());
-                drop_shadow.set_attr("stdDeviation", std_deviation.to_string());
+                drop_shadow.set_attr("dx", ds.x.to_string());
+                drop_shadow.set_attr("dy", ds.y.to_string());
+                drop_shadow.set_attr("stdDeviation", ds.blur.to_string());
                 drop_shadow.set_attr("flood-opacity", "0.6");
 
                 filter.append_child(drop_shadow);
@@ -136,8 +194,37 @@ mod tests {
     use anyhow::Result;
 
     #[test]
+    fn drop_shadow_range() {
+        let drop_shadow = DropShadow {
+            x: 0,
+            y: 0,
+            blur: 0,
+            opacity: 0.5,
+        };
+        assert_eq!(drop_shadow.effect_range(), (1, 1));
+
+        let drop_shadow = DropShadow {
+            x: 0,
+            y: 0,
+            blur: 1,
+            opacity: 0.5,
+        };
+
+        assert_eq!(drop_shadow.effect_range(), (4, 4));
+
+        let drop_shadow = DropShadow {
+            x: 1,
+            y: 2,
+            blur: 1,
+            opacity: 0.5,
+        };
+
+        assert_eq!(drop_shadow.effect_range(), (5, 6));
+    }
+
+    #[test]
     fn svg_image_default() -> Result<()> {
-        let mut img = Image::new_from_path("./assets/input.png".to_string());
+        let img = Image::new_from_path("./assets/input.png".to_string());
 
         let (xml, defs) = img.to_svg(Size(100, 100), Position(10, 20));
 
@@ -180,7 +267,7 @@ mod tests {
     #[test]
     fn svg_image_shadow_effect() -> Result<()> {
         let mut img = Image::new_from_path("./assets/input.png".to_string());
-        img.shadow = Some(((5, 5), 3));
+        img.shadow = Some(DropShadow::new(5, 5, 3));
 
         let (xml, defs) = img.to_svg(Size(1030, 1030), Position(0, 0));
 
@@ -207,7 +294,7 @@ mod tests {
     fn svg_image_complex_effect() -> Result<()> {
         let mut img = Image::new_from_path("./assets/input.png".to_string());
         img.round = Some(15);
-        img.shadow = Some(((5, 5), 3));
+        img.shadow = Some(DropShadow::new(5, 5, 3));
 
         let (xml, defs) = img.to_svg(Size(1030, 1030), Position(0, 0));
 
