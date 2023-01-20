@@ -51,9 +51,11 @@ impl DropShadow {
         }
     }
 
+    /// Get the utmost clearance for the drop shadow on one side.
+    ///
     /// According to gaussian blur, a pixel will be affected
     /// by the pixels no more than (3 standard deviations + 1) px.
-    pub(crate) fn effect_range(&self) -> (usize, usize) {
+    pub(crate) fn get_clearance(&self) -> (usize, usize) {
         let x = self.x + 3 * self.blur + 1;
         let y = self.y + 3 * self.blur + 1;
         (x, y)
@@ -88,12 +90,13 @@ impl Image {
     ///
     /// Padding size is the extra space around the image,
     /// which is left for the shadow.
-    ///
+    /// We treat the two sides in one direction with the same spacing
+    /// to keep the image centered.
     ///
     /// This padding size will affect the size of the [`Image`].
     pub fn get_padding(&self) -> (usize, usize) {
         if let Some(drop_shadow) = &self.shadow {
-            drop_shadow.effect_range()
+            drop_shadow.get_clearance()
         } else {
             (0, 0)
         }
@@ -201,7 +204,7 @@ mod tests {
             blur: 0,
             opacity: 0.5,
         };
-        assert_eq!(drop_shadow.effect_range(), (1, 1));
+        assert_eq!(drop_shadow.get_clearance(), (1, 1));
 
         let drop_shadow = DropShadow {
             x: 0,
@@ -210,7 +213,7 @@ mod tests {
             opacity: 0.5,
         };
 
-        assert_eq!(drop_shadow.effect_range(), (4, 4));
+        assert_eq!(drop_shadow.get_clearance(), (4, 4));
 
         let drop_shadow = DropShadow {
             x: 1,
@@ -219,7 +222,7 @@ mod tests {
             opacity: 0.5,
         };
 
-        assert_eq!(drop_shadow.effect_range(), (5, 6));
+        assert_eq!(drop_shadow.get_clearance(), (5, 6));
     }
 
     #[test]
