@@ -9,7 +9,11 @@ use super::svg::SvgTangibleObject;
 /// A struct that represents a image.
 #[derive(Debug)]
 pub struct Image {
-    pub(crate) path: String,
+    /// The path of the image.
+    /// Also, the image can be a Data URLs.
+    path: String,
+    /// The size of the image.
+    size: (usize, usize),
     /// The rounded corner radius of the image.
     ///
     /// If the value is `None`, the image is not rounded.
@@ -22,12 +26,18 @@ pub struct Image {
 
 impl Image {
     /// Creates a new `Image` instance.
-    pub fn new_from_path(path: String) -> Self {
+    pub fn new_from_path(path: String, size: (usize, usize)) -> Self {
         Self {
             path,
+            size,
             round: None,
             shadow: None,
         }
+    }
+
+    /// Set the size of the image.
+    pub fn set_size(&mut self, size: (usize, usize)) {
+        self.size = size;
     }
 
     /// Get padding size.
@@ -50,13 +60,10 @@ impl Image {
 impl SizeOptionT for Image {
     fn get_size_option(&self) -> SizeOption {
         let padding = self.get_padding();
-        match imagesize::size(&self.path) {
-            Ok(dim) => SizeOption::Absolute(
-                (dim.width + padding.0 * 2) as u32,
-                (dim.height + padding.1 * 2) as u32,
-            ),
-            Err(why) => panic!("Error getting dimensions of {:?}: {:?}", self.path, why),
-        }
+        SizeOption::Absolute(
+            (self.size.0 + padding.0 * 2) as u32,
+            (self.size.1 + padding.1 * 2) as u32,
+        )
     }
 }
 
@@ -170,7 +177,7 @@ mod tests {
 
     #[test]
     fn svg_image_default() -> Result<()> {
-        let img = Image::new_from_path("./assets/input.png".to_string());
+        let img = Image::new_from_path("./assets/input.png".to_string(), (100, 100));
 
         let (xml, defs) = img.to_svg(Size(100, 100), Position(10, 20));
 
@@ -188,7 +195,7 @@ mod tests {
 
     #[test]
     fn svg_image_round_effect() -> Result<()> {
-        let mut img = Image::new_from_path("./assets/input.png".to_string());
+        let mut img = Image::new_from_path("./assets/input.png".to_string(), (100, 100));
         img.round = Some(15);
 
         let (xml, defs) = img.to_svg(Size(100, 100), Position(0, 0));
@@ -212,7 +219,7 @@ mod tests {
 
     #[test]
     fn svg_image_shadow_effect() -> Result<()> {
-        let mut img = Image::new_from_path("./assets/input.png".to_string());
+        let mut img = Image::new_from_path("./assets/input.png".to_string(), (100, 100));
         img.shadow = Some(DropShadow::new(5, 5, 3));
 
         let (xml, defs) = img.to_svg(Size(1030, 1030), Position(0, 0));
@@ -238,7 +245,7 @@ mod tests {
 
     #[test]
     fn svg_image_complex_effect() -> Result<()> {
-        let mut img = Image::new_from_path("./assets/input.png".to_string());
+        let mut img = Image::new_from_path("./assets/input.png".to_string(), (100, 100));
         img.round = Some(15);
         img.shadow = Some(DropShadow::new(5, 5, 3));
 
