@@ -43,25 +43,3 @@ pub fn delete_all_whitespaces(tree: &mut Element) {
         delete_all_whitespaces(child);
     }
 }
-
-#[test]
-fn adt_serialization() -> Result<()> {
-    let mut canvas = Canvas::new();
-
-    let background = Background::new_linear_gradient(
-        vec![
-            (Color("#000000".to_string()), "0%".to_string()),
-            (Color("#ffffff".to_string()), "100%".to_string()),
-        ],
-        45.0,
-    );
-    canvas.add_layer_on_top(Box::new(background));
-
-    let img = Image::new_from_path("./assets/input.png".to_string());
-    canvas.add_layer_on_top(Box::new(img));
-
-    let yaml = serde_yaml::to_string(&canvas).unwrap();
-    println!("{}", yaml);
-
-    Ok(())
-}

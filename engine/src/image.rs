@@ -1,66 +1,10 @@
 use elementtree::Element;
 use serde::{Deserialize, Serialize};
 
-use super::foundation::{Position, PositionOption, PositionOptionT, Size, SizeOption, SizeOptionT};
+use crate::configs::style::{DropShadow, PositionOption, SizeOption};
+
+use super::foundation::{Position, PositionOptionT, Size, SizeOptionT};
 use super::svg::SvgTangibleObject;
-
-/// A struct that represents a drop shadow.
-///
-/// See [the official documentation](https://www.w3.org/TR/filter-effects/#feDropShadowElement).
-#[derive(Debug, Serialize, Deserialize)]
-pub struct DropShadow {
-    /// The x offset of the drop shadow.
-    pub x: usize,
-    /// The y offset of the drop shadow.
-    pub y: usize,
-    #[serde(default = "default_blur")]
-    /// The standard deviation for the blur operation in the drop shadow.
-    pub blur: usize,
-    #[serde(default = "default_opacity")]
-    /// Opacity of the effect.
-    pub opacity: f32,
-}
-
-fn default_blur() -> usize {
-    7
-}
-
-fn default_opacity() -> f32 {
-    0.6
-}
-
-impl std::default::Default for DropShadow {
-    fn default() -> Self {
-        Self {
-            x: 5,
-            y: 5,
-            blur: 7,
-            opacity: 0.6,
-        }
-    }
-}
-
-impl DropShadow {
-    #[cfg(test)]
-    fn new(x: usize, y: usize, blur: usize) -> Self {
-        Self {
-            x,
-            y,
-            blur,
-            opacity: 0.6,
-        }
-    }
-
-    /// Get the utmost clearance for the drop shadow on one side.
-    ///
-    /// According to gaussian blur, a pixel will be affected
-    /// by the pixels no more than (3 standard deviations + 1) px.
-    pub(crate) fn get_clearance(&self) -> (usize, usize) {
-        let x = self.x + 3 * self.blur + 1;
-        let y = self.y + 3 * self.blur + 1;
-        (x, y)
-    }
-}
 
 /// A struct that represents a image.
 #[derive(Debug, Serialize, Deserialize)]
@@ -122,7 +66,6 @@ impl PositionOptionT for Image {
     }
 }
 
-#[typetag::serde]
 impl SvgTangibleObject for Image {
     fn to_svg(&self, size: Size, position: Position) -> (Element, Option<Element>) {
         let mut svg = Element::new("svg");
