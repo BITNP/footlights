@@ -9,15 +9,15 @@ use super::svg::SvgTangibleObject;
 /// A struct that represents a image.
 #[derive(Debug)]
 pub struct Image {
-    path: String,
+    pub(crate) path: String,
     /// The rounded corner radius of the image.
     ///
     /// If the value is `None`, the image is not rounded.
-    round: Option<usize>,
+    pub(crate) round: Option<usize>,
     /// The drop shadow of the image.
     ///
     /// If the value is `None`, the image is not shadowed.
-    shadow: Option<DropShadow>,
+    pub(crate) shadow: Option<DropShadow>,
 }
 
 impl Image {

@@ -11,7 +11,7 @@ use super::svg::SvgTangibleObject;
 //TODO: use BackgroundType directly?
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Background {
-    bg_type: BackgroundType,
+    pub(crate) bg_type: BackgroundType,
     // size: SizeOption,
 }
 

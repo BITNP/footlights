@@ -1,5 +1,15 @@
 //! Config structs for the templates.
 
+use thiserror::Error;
+
+#[derive(Debug, Error)]
+/// The error type for the config module.
+pub enum ConfigError {
+    /// Style is not in the style collection.
+    #[error("Style \"{0}\" is not in the style collection.")]
+    StyleNotInCollectionError(String),
+}
+
 /// The `structure` module contains the structure of the template.
 ///
 /// Currently, the structure is a vector of layers.
@@ -10,17 +20,56 @@
 pub mod structure {
     use serde::{Deserialize, Serialize};
 
-    // TODO:
-    // 2. (Structure, StyleCollection) -> Canvas
-    // 3. Refactor CLI.
+    use crate::{background::Background, image::Image, svg::SvgTangibleObject, Canvas};
+
+    use super::{style::StyleCollection, ConfigError};
+    use anyhow::Result;
+
     #[derive(Debug, Serialize, Deserialize)]
-    pub(crate) struct Structure {
+    pub struct Structure {
         layers: Vec<Layer>,
     }
 
     impl Structure {
         pub(crate) fn from_vec(layers: Vec<Layer>) -> Self {
             Self { layers }
+        }
+
+        /// Build the canvas from the structure and style collections.
+        pub fn build_canvas(&self, style_collections: StyleCollection) -> Result<Canvas> {
+            let mut canvas = Canvas::default();
+            for layer in &self.layers {
+                // Get the style of the layer.
+                let style = style_collections
+                    .get(&layer.style)
+                    .ok_or_else(|| ConfigError::StyleNotInCollectionError(layer.style.clone()))?;
+
+                let layer: Box<dyn SvgTangibleObject> = match layer.ty {
+                    LayerType::Image => {
+                        let image = Image {
+                            path: style.image.clone().expect("Image path is not set."),
+                            round: style.round.clone(),
+
+                            shadow: style.shadow.clone(),
+                        };
+
+                        Box::new(image)
+                    }
+                    LayerType::Background => {
+                        let bg_type = style
+                            .color
+                            .clone()
+                            .expect("Color is not set for background.");
+                        let background = Background { bg_type };
+
+                        Box::new(background)
+                    }
+                };
+
+                canvas.add_layer_on_top(layer);
+            }
+
+            Ok(canvas)
         }
     }
 
@@ -34,8 +83,8 @@ pub mod structure {
 
             let img = Layer {
                 ty: LayerType::Image,
-                id: "image".to_string(),
-                style: "image".to_string(),
+                id: "img".to_string(),
+                style: "img".to_string(),
             };
 
             Self::from_vec(vec![bg, img])
@@ -81,20 +130,32 @@ pub mod style {
     use serde::{Deserialize, Serialize};
     use std::collections::HashMap;
 
+    use crate::background::BackgroundType;
+
     #[derive(Debug, Clone, Serialize, Deserialize)]
-    struct StyleCollection {
+    pub struct StyleCollection {
         styles: HashMap<String, Style>,
     }
 
+    impl StyleCollection {
+        pub(crate) fn new(styles: HashMap<String, Style>) -> Self {
+            Self { styles }
+        }
+
+        pub(crate) fn get(&self, id: &str) -> Option<&Style> {
+            self.styles.get(id)
+        }
+    }
+
     #[derive(Debug, Clone, Serialize, Deserialize)]
-    struct Style {
-        position: PositionOption,
-        size: SizeOption,
-        image: Option<String>,
-        round: Option<usize>,
-        shadow: Option<DropShadow>,
-        // Serde into Background for now.
-        color: Option<String>,
+    pub(crate) struct Style {
+        pub(crate) position: Option<PositionOption>,
+        pub(crate) size: Option<SizeOption>,
+        pub(crate) image: Option<String>,
+        pub(crate) round: Option<usize>,
+        pub(crate) shadow: Option<DropShadow>,
+        // FIXME: Serde into Background for now.
+        pub(crate) color: Option<BackgroundType>,
     }
 
     /// Position of the element, costomized by the user.
@@ -181,24 +242,25 @@ pub mod style {
         #[test]
         fn style_serialization() {
             let style = Style {
-                position: PositionOption::Center,
-                size: SizeOption::FitContent(10),
+                position: Some(PositionOption::Center),
+                size: Some(SizeOption::FitContent(10)),
                 image: Some("image.png".to_string()),
                 round: Some(10),
                 shadow: Some(DropShadow::new(5, 5, 7)),
-                color: Some("#ffffff".to_string()),
+                color: Some(BackgroundType::Pure(crate::foundation::Color(
+                    "red".to_owned(),
+                ))),
             };
 
             let json = serde_yaml::to_string(&style).unwrap();
 
             let style_new: Style = serde_yaml::from_str(&json).unwrap();
 
-            assert_eq!(style_new.position, PositionOption::Center);
-            assert_eq!(style_new.size, SizeOption::FitContent(10));
+            assert_eq!(style_new.position, Some(PositionOption::Center));
+            assert_eq!(style_new.size, Some(SizeOption::FitContent(10)));
             assert_eq!(style_new.image, Some("image.png".to_string()));
             assert_eq!(style_new.round, Some(10));
             assert_eq!(style_new.shadow, Some(DropShadow::new(5, 5, 7)));
-            assert_eq!(style_new.color, Some("#ffffff".to_string()));
         }
     }
 }

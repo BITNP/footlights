@@ -3,12 +3,17 @@ use serde::{Deserialize, Serialize};
 use crate::configs::style::{PositionOption, SizeOption};
 
 #[derive(Debug, Clone, Copy, Default)]
+/// Size is a tuple of width and height.
 pub struct Size(pub u32, pub u32);
 
 #[derive(Debug, Clone, Copy, Default)]
+/// Position is a tuple of x and y.
 pub struct Position(pub u32, pub u32);
 
-#[derive(Debug, Clone, Default, Serialize, Deserialize)]
+#[derive(Debug, Clone, Default, Serialize, Deserialize,)]
+/// Color is a string of color.
+///
+/// Example: "red", "#ff0000", "rgb(255, 0, 0)"
 pub struct Color(pub String);
 
 impl From<&str> for Color {
@@ -17,10 +22,14 @@ impl From<&str> for Color {
     }
 }
 
+/// A trait for objects that can get their configed size option.
 pub trait SizeOptionT {
+    /// Get the size option of the object.
     fn get_size_option(&self) -> SizeOption;
 }
 
+/// A trait for objects that can get their configed position option.
 pub trait PositionOptionT {
+    /// Get the position option of the object.
     fn get_position_option(&self) -> PositionOption;
 }
