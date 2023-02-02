@@ -7,7 +7,7 @@ use super::foundation::{Position, PositionOptionT, Size, SizeOptionT};
 use super::svg::SvgTangibleObject;
 
 /// A struct that represents a image.
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug)]
 pub struct Image {
     path: String,
     /// The rounded corner radius of the image.

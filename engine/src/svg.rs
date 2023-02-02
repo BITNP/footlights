@@ -144,6 +144,8 @@ impl SvgObject for Canvas {
 
 #[cfg(test)]
 mod tests {
+    use crate::shape::{BasicShape, BasicShapeType};
+
     use super::super::foundation::*;
     use super::super::tests::compare_svg;
     use super::*;

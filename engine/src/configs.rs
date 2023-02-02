@@ -8,11 +8,12 @@
 /// In the future, the structure will be a tree and
 /// can be customized by the user.
 pub mod structure {
+    use serde::{Deserialize, Serialize};
 
     // TODO:
-    // 1. add serde.
     // 2. (Structure, StyleCollection) -> Canvas
     // 3. Refactor CLI.
+    #[derive(Debug, Serialize, Deserialize)]
     pub(crate) struct Structure {
         layers: Vec<Layer>,
     }
@@ -41,15 +42,31 @@ pub mod structure {
         }
     }
 
+    #[derive(Debug, Serialize, Deserialize)]
     pub(crate) enum LayerType {
         Image,
         Background,
     }
 
+    #[derive(Debug, Serialize, Deserialize)]
     pub(crate) struct Layer {
         ty: LayerType,
         id: String,
         style: String,
+    }
+
+    #[cfg(test)]
+    mod tests {
+        use super::*;
+
+        #[test]
+        fn structure_serialization() {
+            let structure = Structure::default();
+            let json = serde_yaml::to_string(&structure).unwrap();
+
+            let structure_new: Structure = serde_yaml::from_str(&json).unwrap();
+            assert_eq!(structure_new.layers.len(), 2);
+        }
     }
 }
 
@@ -81,7 +98,7 @@ pub mod style {
     }
 
     /// Position of the element, costomized by the user.
-    #[derive(Debug, Clone, Copy, Serialize, Deserialize)]
+    #[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Eq)]
     pub enum PositionOption {
         /// The element is positioned at the center of the parent element.
         Center,
@@ -90,7 +107,7 @@ pub mod style {
     }
 
     /// Size of the element, costomized by the user.
-    #[derive(Debug, Clone, Copy, Serialize, Deserialize)]
+    #[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Eq)]
     pub enum SizeOption {
         /// The element is sized to fit the content (the child element).
         /// The argument is the padding of the element. (in px)
@@ -102,7 +119,7 @@ pub mod style {
     /// A struct that represents a drop shadow.
     ///
     /// See [the official documentation](https://www.w3.org/TR/filter-effects/#feDropShadowElement).
-    #[derive(Debug, Serialize, Deserialize, Clone)]
+    #[derive(Debug, Serialize, Deserialize, Clone, PartialEq)]
     pub struct DropShadow {
         /// The x offset of the drop shadow.
         pub x: usize,
@@ -157,4 +174,31 @@ pub mod style {
         }
     }
 
+    #[cfg(test)]
+    mod tests {
+        use super::*;
+
+        #[test]
+        fn style_serialization() {
+            let style = Style {
+                position: PositionOption::Center,
+                size: SizeOption::FitContent(10),
+                image: Some("image.png".to_string()),
+                round: Some(10),
+                shadow: Some(DropShadow::new(5, 5, 7)),
+                color: Some("#ffffff".to_string()),
+            };
+
+            let json = serde_yaml::to_string(&style).unwrap();
+
+            let style_new: Style = serde_yaml::from_str(&json).unwrap();
+
+            assert_eq!(style_new.position, PositionOption::Center);
+            assert_eq!(style_new.size, SizeOption::FitContent(10));
+            assert_eq!(style_new.image, Some("image.png".to_string()));
+            assert_eq!(style_new.round, Some(10));
+            assert_eq!(style_new.shadow, Some(DropShadow::new(5, 5, 7)));
+            assert_eq!(style_new.color, Some("#ffffff".to_string()));
+        }
+    }
 }
