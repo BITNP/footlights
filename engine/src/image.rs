@@ -1,5 +1,4 @@
 use elementtree::Element;
-use serde::{Deserialize, Serialize};
 
 use crate::configs::style::{DropShadow, PositionOption, SizeOption};
 
@@ -11,9 +10,9 @@ use super::svg::SvgTangibleObject;
 pub struct Image {
     /// The path of the image.
     /// Also, the image can be a Data URLs.
-    path: String,
+    pub path: String,
     /// The size of the image.
-    size: (usize, usize),
+    pub size: Size,
     /// The rounded corner radius of the image.
     ///
     /// If the value is `None`, the image is not rounded.
@@ -26,17 +25,17 @@ pub struct Image {
 
 impl Image {
     /// Creates a new `Image` instance.
-    pub fn new_from_path(path: String, size: (usize, usize)) -> Self {
+    pub fn new_from_path<T: Into<Size>>(path: String, size: T) -> Self {
         Self {
             path,
-            size,
+            size: size.into(),
             round: None,
             shadow: None,
         }
     }
 
     /// Set the size of the image.
-    pub fn set_size(&mut self, size: (usize, usize)) {
+    pub fn set_size(&mut self, size: Size) {
         self.size = size;
     }
 
@@ -61,8 +60,8 @@ impl SizeOptionT for Image {
     fn get_size_option(&self) -> SizeOption {
         let padding = self.get_padding();
         SizeOption::Absolute(
-            (self.size.0 + padding.0 * 2) as u32,
-            (self.size.1 + padding.1 * 2) as u32,
+            (self.size.0 as usize + padding.0 * 2) as u32,
+            (self.size.1 as usize + padding.1 * 2) as u32,
         )
     }
 }

@@ -30,13 +30,21 @@ pub mod structure {
         layers: Vec<Layer>,
     }
 
+    pub trait ImageSizeProvider {
+        fn get_image_size(&self, src: &str) -> (u32, u32);
+    }
+
     impl Structure {
         pub(crate) fn from_vec(layers: Vec<Layer>) -> Self {
             Self { layers }
         }
 
         /// Build the canvas from the structure and style collections.
-        pub fn build_canvas(&self, style_collections: StyleCollection) -> Result<Canvas> {
+        pub fn build_canvas<I: ImageSizeProvider>(
+            &self,
+            style_collections: StyleCollection,
+            image_size_provider: I,
+        ) -> Result<Canvas> {
             let mut canvas = Canvas::default();
             for layer in &self.layers {
                 // Get the style of the layer.
@@ -48,6 +56,9 @@ pub mod structure {
                     LayerType::Image => {
                         let image = Image {
                             path: style.image.clone().expect("Image path is not set."),
+                            size: image_size_provider
+                                .get_image_size(&style.image.clone().unwrap())
+                                .into(),
                             round: style.round.clone(),
 
                             shadow: style.shadow.clone(),
