@@ -6,11 +6,17 @@ use crate::configs::style::{PositionOption, SizeOption};
 /// Size is a tuple of width and height.
 pub struct Size(pub u32, pub u32);
 
+impl From<(u32, u32)> for Size {
+    fn from((w, h): (u32, u32)) -> Self {
+        Self(w, h)
+    }
+}
+
 #[derive(Debug, Clone, Copy, Default)]
 /// Position is a tuple of x and y.
 pub struct Position(pub u32, pub u32);
 
-#[derive(Debug, Clone, Default, Serialize, Deserialize,)]
+#[derive(Debug, Clone, Default, Serialize, Deserialize)]
 /// Color is a string of color.
 ///
 /// Example: "red", "#ff0000", "rgb(255, 0, 0)"
