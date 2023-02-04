@@ -1,6 +1,6 @@
 styles:
   img:
-    image: ./assets/input.png
+    image: "{image}"
   bg:
     color: !Linear
       stops:
