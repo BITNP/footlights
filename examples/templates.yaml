@@ -40,9 +40,10 @@ layers:
       - 100%
     degree: 35.0
 - type: Image
-  path: ./assets/input.png
+  path: "{image}"
   round: 20
   shadow:
     x: 5
     y: 5
     blur: 7
+

@@ -4,6 +4,9 @@ version = "0.1.0"
 edition = "2021"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+[[bin]]
+name = "fl"
+path = "src/main.rs"
 
 [dependencies]
 anyhow = "1.0.68"
@@ -12,3 +15,6 @@ clap = { version = "4.1.1", features = ["derive"] }
 footlights-engine = { path = "../engine" }
 serde_yaml = "0.9.16"
 image = "0.24.5"
+tokio = {version = "1.24.2", features = ["full"]}
+base64 = "0.21.0"
+tinytemplate = "1.2.1"

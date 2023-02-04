@@ -23,7 +23,6 @@ pub trait SvgTangibleObject: SizeOptionT + PositionOptionT + std::fmt::Debug {
     }
     fn cal_size(&self, child_size: Size) -> Size {
         let size_option = self.get_size_option();
-        println!("size_option: {:?}", size_option);
         match size_option {
             SizeOption::FitContent(padding) => {
                 let width = child_size.0 + padding * 2;
@@ -82,7 +81,6 @@ impl Canvas {
     pub fn to_svg_string(&self) -> Result<String> {
         let string = self.to_svg().to_string()?;
 
-        println!("{}", string);
         Ok(string)
     }
 }
@@ -92,7 +90,6 @@ impl SvgObject for Canvas {
         let mut child_size = Size::default();
         let mut parent_size = Size::default();
         let mut parent_position = Position(0, 0);
-        println!("layers: {:?}", self.layers);
         // Calculate the size from the top to the bottom.
         let (childs, defs_childs): (Vec<_>, Vec<_>) = self
             .layers
@@ -101,10 +98,6 @@ impl SvgObject for Canvas {
             .rev()
             .map(|(i, o)| {
                 let size = o.cal_size(child_size);
-                println!(
-                    "i: {}, o: {:?}, size: {:?}, child_size: {:?}",
-                    i, o, size, child_size
-                );
                 child_size = size;
                 (i, o, size)
             })
