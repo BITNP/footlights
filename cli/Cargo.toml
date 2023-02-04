@@ -11,6 +11,7 @@ resvg = "0.28.0"
 clap = { version = "4.1.1", features = ["derive"] }
 footlights-engine = { path = "../engine" }
 serde_yaml = "0.9.16"
+image = "0.24.5"
 tokio = {version = "1.24.2", features = ["full"]}
 base64 = "0.21.0"
 tinytemplate = "1.2.1"

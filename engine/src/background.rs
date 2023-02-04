@@ -1,9 +1,9 @@
 use elementtree::Element;
 use serde::{Deserialize, Serialize};
 
-use super::foundation::{
-    Color, Position, PositionOption, PositionOptionT, Size, SizeOption, SizeOptionT,
-};
+use crate::configs::style::{PositionOption, SizeOption};
+
+use super::foundation::{Color, Position, PositionOptionT, Size, SizeOptionT};
 use super::svg::SvgTangibleObject;
 
 /// A background layer is a layer only contains style.
@@ -11,7 +11,7 @@ use super::svg::SvgTangibleObject;
 //TODO: use BackgroundType directly?
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Background {
-    bg_type: BackgroundType,
+    pub(crate) bg_type: BackgroundType,
     // size: SizeOption,
 }
 
@@ -66,7 +66,6 @@ impl PositionOptionT for Background {
     }
 }
 
-#[typetag::serde]
 impl SvgTangibleObject for Background {
     fn to_svg(&self, size: Size, position: Position) -> (Element, Option<Element>) {
         match &self.bg_type {
