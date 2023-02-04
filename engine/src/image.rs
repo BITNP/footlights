@@ -224,7 +224,6 @@ mod tests {
         let (xml, defs) = img.to_svg(Size(1030, 1030), Position(0, 0));
 
         assert!(defs.is_none());
-        println!("{}", xml.to_string()?);
 
         const EXPECT: &str = r#"
 <svg x="0" y="0" height="1030" width="1030">

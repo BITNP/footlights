@@ -11,7 +11,7 @@ use footlights_engine::configs::{
 
 mod svg_render;
 
-use tokio::io::{stdin, AsyncRead, AsyncReadExt};
+use tokio::io::{stdin, AsyncRead, AsyncReadExt, AsyncWriteExt};
 
 #[derive(Parser, Debug)]
 #[command(author, version, about, long_about = None)]
@@ -20,14 +20,21 @@ pub struct UserInput {
     config: String,
 
     #[arg(short, long)]
-    output: String,
+    output: Option<String>,
 
     /// Read data from stdin.
     #[arg(long)]
     stdin: bool,
 
+    /// Output data to stdout.
     #[arg(long)]
+    stdout: bool,
+
+    #[arg(short, long)]
     image: Option<String>,
+
+    #[arg(long)]
+    debug: bool,
 }
 
 struct CliImageSizeProvider;
@@ -71,11 +78,8 @@ async fn main() -> Result<()> {
         let mut buffer = Vec::new();
         let mut stdin = tokio::io::stdin();
         stdin.read_to_end(&mut buffer).await.unwrap();
-        println!("read from stdin, {}, {:?}", buffer.len(), buffer);
         // 2. Encode the image into data URLs.
         let encoded = base64::engine::general_purpose::STANDARD_NO_PAD.encode(&buffer);
-
-        println!("encoded: {}", encoded.len());
 
         let data_url = format!("data:image/png;base64,{}", encoded);
         map.insert("image".to_string(), data_url);
@@ -89,7 +93,9 @@ async fn main() -> Result<()> {
     tt.add_template("style_collections", &yaml)?;
     let rendered_yaml = tt.render("style_collections", &map)?;
 
-    println!("{}", rendered_yaml);
+    if args.debug {
+        eprintln!("{}", rendered_yaml);
+    }
 
     let styles: StyleCollection = serde_yaml::from_str(&rendered_yaml)?;
     let structure = Structure::default();
@@ -100,7 +106,16 @@ async fn main() -> Result<()> {
 
     let pixmap = svg_render::svg_string_to_pixmap(&svg_string)?;
 
-    pixmap.save_png(&args.output).unwrap();
+    // Output data to stdout.
+    if args.stdout {
+        let mut stdout = tokio::io::stdout();
+        stdout.write_all(&pixmap.encode_png()?).await?;
+    }
+
+    // Write data to a file.
+    if let Some(output) = args.output {
+        pixmap.save_png(&output).unwrap();
+    }
 
     Ok(())
 }
