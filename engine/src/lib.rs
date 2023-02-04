@@ -2,9 +2,11 @@
 
 //! Abstract DOM Tree
 
-pub mod foundation;
-pub mod svg;
+pub mod configs;
 
+pub mod svg;
+pub mod foundation;
+pub mod shape;
 pub mod background;
 pub mod image;
 

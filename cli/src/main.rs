@@ -1,7 +1,7 @@
 use clap::Parser;
 
 use anyhow::Result;
-use footlights_engine::Canvas;
+use footlights_engine::configs::{structure::Structure, style::StyleCollection};
 
 mod svg_render;
 
@@ -23,11 +23,16 @@ fn main() -> Result<()> {
 
     // read yaml file from args[1]
     let yaml = std::fs::read_to_string(args.config)?;
-    let root: Canvas = serde_yaml::from_str(&yaml)?;
+    let styles: StyleCollection = serde_yaml::from_str(&yaml)?;
+    let structure = Structure::default();
 
-    // let pixmap = svg_render::svg_string_to_pixmap(&svg_string)?;
-    let pixmap = svg_render::svg_string_to_pixmap(&root.to_svg_string()?)?;
+    let canvas = structure.build_canvas(styles)?;
+
+    let svg_string = canvas.to_svg_string()?;
+
+    let pixmap = svg_render::svg_string_to_pixmap(&svg_string)?;
 
     pixmap.save_png(&args.output).unwrap();
+    
     Ok(())
 }

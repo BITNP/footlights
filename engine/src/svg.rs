@@ -1,16 +1,14 @@
 use anyhow::Result;
 use elementtree::Element;
 
-use super::foundation::{
-    BasicShape, Position, PositionOption, PositionOptionT, Size, SizeOption, SizeOptionT,
-};
-use serde::{Deserialize, Serialize};
+use crate::configs::style::{PositionOption, SizeOption};
+
+use super::foundation::{Position, PositionOptionT, Size, SizeOptionT};
 
 pub trait SvgObject {
     fn to_svg(&self) -> Element;
 }
 
-#[typetag::serde(tag = "type")]
 pub trait SvgTangibleObject: SizeOptionT + PositionOptionT + std::fmt::Debug {
     fn cal_position(&self, parent_size: Size, size: Size) -> Position {
         let position_option = self.get_position_option();
@@ -42,26 +40,7 @@ pub trait SvgTangibleObject: SizeOptionT + PositionOptionT + std::fmt::Debug {
     fn to_svg(&self, size: Size, position: Position) -> (Element, Option<Element>);
 }
 
-#[typetag::serde]
-impl SvgTangibleObject for BasicShape {
-    fn to_svg(&self, size: Size, position: Position) -> (Element, Option<Element>) {
-        let mut element = Element::new("rect");
-        element.set_attr("width", size.0.to_string());
-        element.set_attr("height", size.1.to_string());
-        element.set_attr("x", position.0.to_string());
-        element.set_attr("y", position.1.to_string());
-        // TODO: valid css color
-        self.fill
-            .as_ref()
-            .map(|fill| element.set_attr("fill", fill));
-        // self.stroke
-        //     .as_ref()
-        //     .map(|stroke| element.set_attr("stroke", stroke));
-        (element, None)
-    }
-}
-
-#[derive(Serialize, Deserialize)]
+/// A canvas is a container for a series of layers.
 pub struct Canvas {
     /// A series of layers that are rendered in order.
     ///
@@ -165,6 +144,8 @@ impl SvgObject for Canvas {
 
 #[cfg(test)]
 mod tests {
+    use crate::shape::{BasicShape, BasicShapeType};
+
     use super::super::foundation::*;
     use super::super::tests::compare_svg;
     use super::*;

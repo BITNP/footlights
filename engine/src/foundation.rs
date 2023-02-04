@@ -1,14 +1,19 @@
-#![warn(missing_docs)]
-
 use serde::{Deserialize, Serialize};
 
+use crate::configs::style::{PositionOption, SizeOption};
+
 #[derive(Debug, Clone, Copy, Default)]
+/// Size is a tuple of width and height.
 pub struct Size(pub u32, pub u32);
 
 #[derive(Debug, Clone, Copy, Default)]
+/// Position is a tuple of x and y.
 pub struct Position(pub u32, pub u32);
 
-#[derive(Debug, Clone, Default, Serialize, Deserialize)]
+#[derive(Debug, Clone, Default, Serialize, Deserialize,)]
+/// Color is a string of color.
+///
+/// Example: "red", "#ff0000", "rgb(255, 0, 0)"
 pub struct Color(pub String);
 
 impl From<&str> for Color {
@@ -17,65 +22,14 @@ impl From<&str> for Color {
     }
 }
 
+/// A trait for objects that can get their configed size option.
 pub trait SizeOptionT {
+    /// Get the size option of the object.
     fn get_size_option(&self) -> SizeOption;
 }
 
+/// A trait for objects that can get their configed position option.
 pub trait PositionOptionT {
+    /// Get the position option of the object.
     fn get_position_option(&self) -> PositionOption;
-}
-
-#[derive(Debug, Clone, Copy, Serialize, Deserialize)]
-pub enum PositionOption {
-    Center,
-    Absolute(u32, u32),
-}
-
-#[derive(Debug, Clone, Copy, Serialize, Deserialize)]
-pub enum SizeOption {
-    // FitContent(Padding)
-    FitContent(u32),
-    Absolute(u32, u32),
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct BasicShape {
-    shape_type: BasicShapeType,
-    position: PositionOption,
-    size: SizeOption,
-    pub fill: Option<String>,
-}
-
-// pub struct ViewBox {
-//     content: Box<dyn SvgTangibleObject>,
-//     position_option: PositionOption,
-//     size_option: SizeOption,
-// }
-
-impl BasicShape {
-    pub fn new(shape_type: BasicShapeType) -> Self {
-        Self {
-            shape_type,
-            size: SizeOption::Absolute(100, 100),
-            position: PositionOption::Center,
-            fill: None,
-        }
-    }
-}
-
-impl SizeOptionT for BasicShape {
-    fn get_size_option(&self) -> SizeOption {
-        self.size
-    }
-}
-
-impl PositionOptionT for BasicShape {
-    fn get_position_option(&self) -> PositionOption {
-        self.position
-    }
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub enum BasicShapeType {
-    Rectangle,
 }
