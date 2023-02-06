@@ -1,6 +1,11 @@
 styles:
   img:
     image: "{image}"
+    round: 20
+    shadow:
+      x: 5
+      y: 5
+      blur: 7
   bg:
     color: !Linear
       stops:
