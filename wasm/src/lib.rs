@@ -64,7 +64,7 @@ pub struct ImageSizeProviderImpl;
 
 impl ImageSizeProvider for ImageSizeProviderImpl {
     fn get_image_size(&self, src: &str) -> (u32, u32) {
-        todo!()
+        (100, 100)
     }
 }
 
