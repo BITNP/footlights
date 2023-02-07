@@ -42,7 +42,7 @@ pub mod structure {
         /// Build the canvas from the structure and style collections.
         pub fn build_canvas<I: ImageSizeProvider>(
             &self,
-            style_collections: StyleCollection,
+            style_collections: &StyleCollection,
             image_size_provider: I,
         ) -> Result<Canvas> {
             let mut canvas = Canvas::default();
@@ -143,7 +143,7 @@ pub mod style {
 
     use crate::background::BackgroundType;
 
-    #[derive(Debug, Clone, Serialize, Deserialize)]
+    #[derive(Debug, Clone, Serialize, Deserialize, Default)]
     pub struct StyleCollection {
         styles: HashMap<String, Style>,
     }
@@ -156,10 +156,14 @@ pub mod style {
         pub(crate) fn get(&self, id: &str) -> Option<&Style> {
             self.styles.get(id)
         }
+
+        pub fn add(&mut self, id: String, style: Style) {
+            self.styles.insert(id, style);
+        }
     }
 
-    #[derive(Debug, Clone, Serialize, Deserialize)]
-    pub(crate) struct Style {
+    #[derive(Debug, Clone, Serialize, Deserialize, Default)]
+    pub struct Style {
         pub(crate) position: Option<PositionOption>,
         pub(crate) size: Option<SizeOption>,
         pub(crate) image: Option<String>,
