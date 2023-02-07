@@ -71,7 +71,10 @@ pub mod structure {
                             .color
                             .clone()
                             .expect("Color is not set for background.");
-                        let background = Background { bg_type };
+                        let background = Background {
+                            bg_type,
+                            blur: style.blur.clone(),
+                        };
 
                         Box::new(background)
                     }
@@ -167,6 +170,7 @@ pub mod style {
         pub(crate) shadow: Option<DropShadow>,
         // FIXME: Serde into Background for now.
         pub(crate) color: Option<BackgroundType>,
+        pub(crate) blur: Option<usize>,
     }
 
     /// Position of the element, costomized by the user.
@@ -261,6 +265,7 @@ pub mod style {
                 color: Some(BackgroundType::Pure(crate::foundation::Color(
                     "red".to_owned(),
                 ))),
+                blur: Some(10),
             };
 
             let json = serde_yaml::to_string(&style).unwrap();
@@ -272,6 +277,7 @@ pub mod style {
             assert_eq!(style_new.image, Some("image.png".to_string()));
             assert_eq!(style_new.round, Some(10));
             assert_eq!(style_new.shadow, Some(DropShadow::new(5, 5, 7)));
+            assert_eq!(style_new.blur, Some(10));
         }
     }
 }
