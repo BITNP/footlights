@@ -100,7 +100,7 @@ async fn main() -> Result<()> {
     let styles: StyleCollection = serde_yaml::from_str(&rendered_yaml)?;
     let structure = Structure::default();
 
-    let canvas = structure.build_canvas(styles, CliImageSizeProvider {})?;
+    let canvas = structure.build_canvas(&styles, CliImageSizeProvider {})?;
 
     let svg_string = canvas.to_svg_string()?;
 
