@@ -73,7 +73,7 @@ impl PositionOptionT for Image {
 }
 
 impl SvgTangibleObject for Image {
-    fn to_svg(&self, size: Size, position: Position) -> (Element, Option<Element>) {
+    fn to_svg(&self, size: Size, position: Position, id: String) -> (Element, Option<Element>) {
         let mut svg = Element::new("svg");
         svg.set_attr("width", size.0.to_string());
         svg.set_attr("height", size.1.to_string());
@@ -87,7 +87,7 @@ impl SvgTangibleObject for Image {
 
             if let Some(round) = self.round {
                 let mut clip_path = Element::new("clipPath");
-                clip_path.set_attr("id", "clip");
+                clip_path.set_attr("id", format!("clip-{}", id));
                 let mut rect = Element::new("rect");
                 rect.set_attr("width", (size.0 - padding.0 as u32 * 2).to_string());
                 rect.set_attr("height", (size.1 - padding.1 as u32 * 2).to_string());
@@ -100,7 +100,7 @@ impl SvgTangibleObject for Image {
 
             if let Some(ds) = &self.shadow {
                 let mut filter = Element::new("filter");
-                filter.set_attr("id", "shadow");
+                filter.set_attr("id", format!("shadow-{}", id));
                 let mut drop_shadow = Element::new("feDropShadow");
                 drop_shadow.set_attr("dx", ds.x.to_string());
                 drop_shadow.set_attr("dy", ds.y.to_string());
@@ -121,11 +121,11 @@ impl SvgTangibleObject for Image {
         img.set_attr("x", padding.0.to_string());
         img.set_attr("y", padding.1.to_string());
         if self.round.is_some() {
-            img.set_attr("clip-path", "url(#clip)");
+            img.set_attr("clip-path", format!("url(#clip-{})", id));
         }
         if self.shadow.is_some() {
             let mut rect = Element::new("rect");
-            rect.set_attr("filter", "url(#shadow)");
+            rect.set_attr("filter", format!("url(#shadow-{})", id));
             rect.set_attr("width", (size.0 - padding.0 as u32 * 2).to_string());
             rect.set_attr("height", (size.1 - padding.1 as u32 * 2).to_string());
             rect.set_attr("x", padding.0.to_string());
@@ -178,7 +178,7 @@ mod tests {
     fn svg_image_default() -> Result<()> {
         let img = Image::new_from_path("./assets/input.png".to_string(), (100, 100));
 
-        let (xml, defs) = img.to_svg(Size(100, 100), Position(10, 20));
+        let (xml, defs) = img.to_svg(Size(100, 100), Position(10, 20), "1".to_string());
 
         assert!(defs.is_none());
 
@@ -197,18 +197,18 @@ mod tests {
         let mut img = Image::new_from_path("./assets/input.png".to_string(), (100, 100));
         img.round = Some(15);
 
-        let (xml, defs) = img.to_svg(Size(100, 100), Position(0, 0));
+        let (xml, defs) = img.to_svg(Size(100, 100), Position(0, 0), "1".to_string());
 
         assert!(defs.is_none());
 
         const EXPECT: &str = r#"
 <svg x="0" y="0" height="100" width="100">
     <defs>
-        <clipPath id="clip">
+        <clipPath id="clip-1">
             <rect width="100" height="100" x="0" y="0" rx="15" />
         </clipPath>
     </defs>
-    <image width="100" height="100" x="0" y="0" href="./assets/input.png" clip-path="url(#clip)" />
+    <image width="100" height="100" x="0" y="0" href="./assets/input.png" clip-path="url(#clip-1)" />
 </svg>
         "#;
         compare_svg(&xml, EXPECT)?;
@@ -221,18 +221,18 @@ mod tests {
         let mut img = Image::new_from_path("./assets/input.png".to_string(), (100, 100));
         img.shadow = Some(DropShadow::new(5, 5, 3));
 
-        let (xml, defs) = img.to_svg(Size(1030, 1030), Position(0, 0));
+        let (xml, defs) = img.to_svg(Size(1030, 1030), Position(0, 0), "1".to_string());
 
         assert!(defs.is_none());
 
         const EXPECT: &str = r#"
 <svg x="0" y="0" height="1030" width="1030">
     <defs>
-        <filter id='shadow'>
+        <filter id='shadow-1'>
             <feDropShadow dx="5" dy="5" stdDeviation="3" flood-opacity="0.6" />
         </filter>
     </defs>
-    <rect width="1000" height="1000" x="15" y="15" rx="0" filter="url(#shadow)" />
+    <rect width="1000" height="1000" x="15" y="15" rx="0" filter="url(#shadow-1)" />
     <image height="1000" width="1000" href="./assets/input.png" x="15" y="15" />
 </svg>
         "#;
@@ -247,22 +247,22 @@ mod tests {
         img.round = Some(15);
         img.shadow = Some(DropShadow::new(5, 5, 3));
 
-        let (xml, defs) = img.to_svg(Size(1030, 1030), Position(0, 0));
+        let (xml, defs) = img.to_svg(Size(1030, 1030), Position(0, 0), "1".to_string());
 
         assert!(defs.is_none());
 
         const EXPECT: &str = r#"
 <svg x="0" y="0" height="1030" width="1030">
     <defs>
-        <clipPath id="clip">
+        <clipPath id="clip-1">
             <rect width="1000" height="1000" x="15" y="15" rx="15" />
         </clipPath>
-        <filter id='shadow'>
+        <filter id='shadow-1'>
             <feDropShadow dx="5" dy="5" stdDeviation="3" flood-opacity="0.6" />
         </filter>
     </defs>
-    <rect width="1000" height="1000" x="15" y="15" rx="15" filter="url(#shadow)" />
-    <image height="1000" width="1000" href="./assets/input.png" x="15" y="15" clip-path="url(#clip)" />
+    <rect width="1000" height="1000" x="15" y="15" rx="15" filter="url(#shadow-1)" />
+    <image height="1000" width="1000" href="./assets/input.png" x="15" y="15" clip-path="url(#clip-1)" />
 </svg>
         "#;
         compare_svg(&xml, EXPECT)?;

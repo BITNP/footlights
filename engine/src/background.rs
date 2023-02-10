@@ -67,7 +67,7 @@ impl PositionOptionT for Background {
 }
 
 impl SvgTangibleObject for Background {
-    fn to_svg(&self, size: Size, position: Position) -> (Element, Option<Element>) {
+    fn to_svg(&self, size: Size, position: Position, id: String) -> (Element, Option<Element>) {
         match &self.bg_type {
             BackgroundType::Linear(linear_gradient) => {
                 let mut svg = Element::new("svg");
@@ -79,7 +79,7 @@ impl SvgTangibleObject for Background {
                 let mut defs = Element::new("defs");
 
                 let mut linear = Element::new("linearGradient");
-                linear.set_attr("id", "background");
+                linear.set_attr("id", format!("background-{}", id));
                 linear.set_attr(
                     "gradientTransform",
                     format!("rotate({})", linear_gradient.degree),
@@ -101,7 +101,7 @@ impl SvgTangibleObject for Background {
                 let mut rect = Element::new("rect");
                 rect.set_attr("width", "100%");
                 rect.set_attr("height", "100%");
-                rect.set_attr("fill", "url(#background)");
+                rect.set_attr("fill", format!("url(#background-{})", id));
 
                 defs.append_child(linear);
                 svg.append_child(defs);
@@ -136,7 +136,7 @@ mod tests {
     fn svg_background_pure() -> Result<()> {
         let background = Background::new_pure(Color("red".to_string()));
 
-        let (xml, defs) = background.to_svg(Size(100, 100), Position(0, 0));
+        let (xml, defs) = background.to_svg(Size(100, 100), Position(0, 0), "1".to_string());
 
         assert!(defs.is_none());
 
@@ -155,17 +155,17 @@ mod tests {
             ("blue".into(), 1.0.to_string()),
         ];
         let background = Background::new_linear_gradient(stops, 45.0);
-        let (xml, _) = background.to_svg(Size(100, 100), Position(0, 0));
+        let (xml, _) = background.to_svg(Size(100, 100), Position(0, 0), "1".to_string());
 
         const EXPECT: &str = r#"
 <svg x="0" y="0" height="100" width="100">
     <defs>
-        <linearGradient gradientTransform="rotate(45)" id="background">
+        <linearGradient gradientTransform="rotate(45)" id="background-1">
             <stop offset="0" stop-color="red"/>
             <stop offset="1" stop-color="blue"/>
         </linearGradient>
     </defs>
-    <rect width="100%" height="100%" fill="url(#background)" />
+    <rect width="100%" height="100%" fill="url(#background-1)" />
 </svg>
         "#;
 

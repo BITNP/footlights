@@ -44,7 +44,7 @@ pub enum BasicShapeType {
 }
 
 impl SvgTangibleObject for BasicShape {
-    fn to_svg(&self, size: Size, position: Position) -> (Element, Option<Element>) {
+    fn to_svg(&self, size: Size, position: Position, id: String) -> (Element, Option<Element>) {
         let mut element = Element::new("rect");
         element.set_attr("width", size.0.to_string());
         element.set_attr("height", size.1.to_string());
