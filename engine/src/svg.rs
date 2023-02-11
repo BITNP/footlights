@@ -9,7 +9,10 @@ pub trait SvgObject {
     fn to_svg(&self) -> Element;
 }
 
+/// A SvgTangibleObject is a element that can be expressed in svg.
 pub trait SvgTangibleObject: SizeOptionT + PositionOptionT + std::fmt::Debug {
+    /// Calculate the absolute position of the object, given the size of the parent object and the
+    /// size of the object itself.
     fn cal_position(&self, parent_size: Size, size: Size) -> Position {
         let position_option = self.get_position_option();
         match position_option {
@@ -21,6 +24,8 @@ pub trait SvgTangibleObject: SizeOptionT + PositionOptionT + std::fmt::Debug {
             PositionOption::Absolute(x, y) => Position(x, y),
         }
     }
+
+    /// Calculate the absolute size of the object, given the size of the child object.
     fn cal_size(&self, child_size: Size) -> Size {
         let size_option = self.get_size_option();
         match size_option {
@@ -32,11 +37,13 @@ pub trait SvgTangibleObject: SizeOptionT + PositionOptionT + std::fmt::Debug {
             SizeOption::Absolute(width, height) => Size(width, height),
         }
     }
+
     /// Generate svg elements with the given size and position.
     ///
-    /// * `size`:
-    /// * `position`:
-    fn to_svg(&self, size: Size, position: Position) -> (Element, Option<Element>);
+    /// * `size`: The size of the object.
+    /// * `position`: The absolute position of the object.
+    /// * `Id`: The id of the object.
+    fn to_svg(&self, size: Size, position: Position, Id: String) -> (Element, Option<Element>);
 }
 
 /// A canvas is a container for a series of layers.
@@ -111,7 +118,7 @@ impl SvgObject for Canvas {
                 parent_position = position;
                 (i, o, s, position)
             })
-            .map(|(_, o, s, p)| o.to_svg(s, p))
+            .map(|(i, o, s, p)| o.to_svg(s, p, i.to_string()))
             .unzip();
 
         let mut root = self.build_svg_canvas(child_size);
@@ -146,7 +153,7 @@ mod tests {
     #[test]
     fn svg_basic_shape_rect() -> Result<()> {
         let img = BasicShape::new(BasicShapeType::Rectangle);
-        let (xml, defs) = img.to_svg(Size(100, 100), Position(0, 0));
+        let (xml, defs) = img.to_svg(Size(100, 100), Position(0, 0), "1".to_string());
 
         assert!(defs.is_none());
 
