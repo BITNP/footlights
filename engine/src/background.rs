@@ -12,7 +12,8 @@ use super::svg::SvgTangibleObject;
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Background {
     pub(crate) bg_type: BackgroundType,
-    // size: SizeOption,
+    /// Gaussian blur std deviation. (`<feGaussianBlur>`)
+    pub blur: Option<usize>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -26,12 +27,14 @@ impl Background {
     pub fn new() -> Self {
         Self {
             bg_type: BackgroundType::Pure(Color("white".to_string())),
+            blur: None,
         }
     }
 
     pub fn new_pure(color: Color) -> Self {
         Self {
             bg_type: BackgroundType::Pure(color),
+            blur: None,
         }
     }
 
@@ -40,6 +43,7 @@ impl Background {
 
         Self {
             bg_type: BackgroundType::Linear(linear_gradient),
+            blur: None,
         }
     }
 }
@@ -98,6 +102,25 @@ impl SvgTangibleObject for Background {
                         linear.append_child(stop);
                     });
 
+                if let Some(blur) = self.blur {
+                    // <filter id="blur">
+                    let mut filter = Element::new("filter");
+                    filter.set_attr("id", "blur");
+                    // <feGaussianBlur stdDeviation="{self.blur}" />
+                    let mut gaussian_blur = Element::new("feGaussianBlur");
+                    gaussian_blur.set_attr("stdDeviation", blur.to_string());
+
+                    let mut component_transfer = Element::new("feComponentTransfer");
+                    let mut func_a = Element::new("feFuncA");
+                    func_a.set_attr("type", "discrete");
+                    func_a.set_attr("tableValues", "0 1");
+                    component_transfer.append_child(func_a);
+
+                    filter.append_child(gaussian_blur);
+                    filter.append_child(component_transfer);
+                    defs.append_child(filter);
+                }
+
                 let mut rect = Element::new("rect");
                 rect.set_attr("width", "100%");
                 rect.set_attr("height", "100%");
@@ -105,6 +128,13 @@ impl SvgTangibleObject for Background {
 
                 defs.append_child(linear);
                 svg.append_child(defs);
+                if self.blur.is_some() {
+                    let mut blur_rect = Element::new("rect");
+                    blur_rect.set_attr("width", "100%");
+                    blur_rect.set_attr("height", "100%");
+                    blur_rect.set_attr("filter", "url(#blur)");
+                    svg.append_child(blur_rect);
+                }
                 svg.append_child(rect);
 
                 (svg, None)
@@ -168,6 +198,40 @@ mod tests {
     <rect width="100%" height="100%" fill="url(#background-1)" />
 </svg>
         "#;
+
+        compare_svg(&xml, EXPECT).unwrap();
+        Ok(())
+    }
+
+    #[test]
+    fn svg_background_blur() -> Result<()> {
+        let stops = vec![
+            ("red".into(), 0.0.to_string()),
+            ("blue".into(), 1.0.to_string()),
+        ];
+        let mut background = Background::new_linear_gradient(stops, 45.0);
+        background.blur = Some(10);
+
+        let (xml, _) = background.to_svg(Size(100, 100), Position(0, 0));
+
+        const EXPECT: &str = r#"
+<svg x="0" y="0" height="100" width="100">
+    <defs>
+        <filter id="blur">
+            <feGaussianBlur stdDeviation="10" />
+            <feComponentTransfer>
+                  <feFuncA type="discrete" tableValues="0 1"/>
+            </feComponentTransfer>
+        </filter>
+        <linearGradient gradientTransform="rotate(45)" id="background">
+            <stop offset="0" stop-color="red"/>
+            <stop offset="1" stop-color="blue"/>
+        </linearGradient>
+    </defs>
+    <rect width="100%" height="100%" filter="url(#blur)"/>
+    <rect width="100%" height="100%" fill="url(#background)"/>
+</svg>
+"#;
 
         compare_svg(&xml, EXPECT).unwrap();
         Ok(())
